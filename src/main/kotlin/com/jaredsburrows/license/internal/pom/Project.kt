@@ -20,5 +20,10 @@ data class Project(
   var url: String = "",
   var developers: List<Developer> = listOf(),
   var year: String = "",
-  var gav: String = "" // group/artifact/version
+  var gav: String = "", // group/artifact/version
+  var moduleName: String = "",
+  var moduleUrl: String = "",
+  var moduleVersion: String = "",
+  var moduleLicense: String = "",
+  var moduleLicenseUrl: String = ""
 )

@@ -22,8 +22,8 @@ group = GROUP
 version = VERSION_NAME
 description = POM_DESCRIPTION
 
-sourceCompatibility = versions.java
-targetCompatibility = versions.java
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 jar {
   manifest {

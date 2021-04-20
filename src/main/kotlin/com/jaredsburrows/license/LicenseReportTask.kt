@@ -35,10 +35,12 @@ open class LicenseReportTask : DefaultTask() { // tasks can't be final
   @Input var assetDirs = listOf<File>()
   @Input var generateCsvReport = false
   @Input var generateHtmlReport = false
-  @Input var generateJsonReport = false
+  @Input var generateJsonReport = true
   @Input var copyCsvReportToAssets = false
   @Input var copyHtmlReportToAssets = false
   @Input var copyJsonReportToAssets = false
+  @Input var addEmptyLicenceToReport = false
+  @Input var outputFullFormat = false
 
   @Optional @Input
   var buildType: String? = null
@@ -57,32 +59,8 @@ open class LicenseReportTask : DefaultTask() { // tasks can't be final
     initDependencies()
     generatePOMInfo()
 
-    if (generateCsvReport) {
-      createCsvReport()
-
-      // If android project and copy enabled, copy to asset directory
-      if (!variantName.isNullOrEmpty() && copyCsvReportToAssets) {
-        copyCsvReport()
-      }
-    }
-
-    if (generateHtmlReport) {
-      createHtmlReport()
-
-      // If android project and copy enabled, copy to asset directory
-      if (!variantName.isNullOrEmpty() && copyHtmlReportToAssets) {
-        copyHtmlReport()
-      }
-    }
-
-    if (generateJsonReport) {
-      createJsonReport()
-
-      // If android project and copy enabled, copy to asset directory
-      if (!variantName.isNullOrEmpty() && copyJsonReportToAssets) {
-        copyJsonReport()
-      }
-    }
+    createJsonReport()
+    createHtmlReport()
   }
 
   /** Iterate through all configurations and collect dependencies. */
@@ -106,7 +84,7 @@ open class LicenseReportTask : DefaultTask() { // tasks can't be final
 
     // If Android project, add extra configurations
     variantName?.let { variant ->
-      configurations.find { it.name == "${variant}RuntimeClasspath" }?.also {
+      configurations.find { it.name == "releaseRuntimeClasspath" }?.also {
         configurationSet.add(it)
       }
     }
@@ -176,14 +154,27 @@ open class LicenseReportTask : DefaultTask() { // tasks can't be final
           }
         }
 
+        var moduleUrl = ""
+        if (!node.getAt("url").text().isNullOrEmpty()) {
+          moduleUrl = node.getAt("url").text().split("#")[0].trim()
+        }
+
         val url = node.getAt("url").text().trim()
+
         val inceptionYear = node.getAt("inceptionYear").text().trim()
 
         // Search for licenses
-        var licenses = findLicenses(pomFile)
+        var moduleLicense = ""
+        var moduleLicenseUrl = ""
+        var licencesFinal = emptyList<License>()
+        val licenses = findLicenses(pomFile)
         if (licenses.isEmpty()) {
           logger.log(LogLevel.WARN, "$name dependency does not have a license.")
-          licenses = arrayListOf()
+        } else if (licenses.size == 1) {
+          moduleLicense = licenses[0].name
+          moduleLicenseUrl = licenses[0].url
+        } else {
+          licencesFinal = licenses
         }
 
         // Search for version
@@ -193,18 +184,35 @@ open class LicenseReportTask : DefaultTask() { // tasks can't be final
 
         // Store the information that we need
         val module = resolvedArtifact.moduleVersion.id
+
         val project = Project().apply {
-          this.name = name
-          this.description = description
-          this.version = version
-          this.licenses = licenses
-          this.url = url
-          this.developers = developers
-          this.year = inceptionYear
-          this.gav = "${module.group}:${module.name}:${module.version}"
+          if (outputFullFormat) {
+            this.name = name
+            this.description = description
+            this.url = url
+            this.version = version
+            this.licenses = licencesFinal
+            this.developers = developers
+            this.year = inceptionYear
+            this.gav = "${module.group}:${module.name}:${module.version}"
+          }
+
+          this.moduleName = "${module.group}:${module.name}"
+          this.moduleVersion = version
+          this.moduleUrl = moduleUrl
+          this.moduleLicense = moduleLicense
+          this.moduleLicenseUrl = moduleLicenseUrl
         }
 
-        projects.add(project)
+        if (addEmptyLicenceToReport) {
+          if ((project.moduleLicense.isNullOrEmpty() && project.moduleLicenseUrl.isNullOrEmpty() && project.moduleUrl.isNullOrEmpty())) {
+            projects.add(project)
+          }
+        } else if (!addEmptyLicenceToReport) {
+          if ((!project.moduleLicense.isNullOrEmpty() && !project.moduleLicenseUrl.isNullOrEmpty() && !project.moduleUrl.isNullOrEmpty())) {
+            projects.add(project)
+          }
+        }
       }
 
     // Sort POM information by name

@@ -90,6 +90,8 @@ class LicensePlugin : Plugin<Project> {
         copyCsvReportToAssets = extension.copyCsvReportToAssets
         copyHtmlReportToAssets = extension.copyHtmlReportToAssets
         copyJsonReportToAssets = extension.copyJsonReportToAssets
+        addEmptyLicenceToReport = extension.addEmptyLicenceToReport
+        outputFullFormat = extension.outputFullFormat
         assetDirs = (
           project
             .extensions

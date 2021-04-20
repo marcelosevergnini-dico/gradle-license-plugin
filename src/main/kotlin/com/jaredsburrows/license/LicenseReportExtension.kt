@@ -28,4 +28,8 @@ open class LicenseReportExtension { // extensions can't be final
    * project is not an Android project. Has no effect if the JSON report is disabled.
    */
   var copyJsonReportToAssets = false
+
+  var addEmptyLicenceToReport = true
+
+  var outputFullFormat = false
 }
